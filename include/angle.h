@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include <bcm2835.h>
-#include "pwm_300.h"
+#include "pwm_50.h"
 
 extern int ang_mes;
 

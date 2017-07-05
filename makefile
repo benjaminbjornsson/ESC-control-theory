@@ -6,7 +6,7 @@ INCLUDE = -Iinclude/
 SOURCE = src/main.c
 SOURCE += src/angle.c
 SOURCE += src/gpio_init.c
-SOURCE += src/pwm_300.c
+SOURCE += src/pwm_50.c
 
 all:
 	gcc $(SOURCE) $(CFLAGS) $(LIBS) $(INCLUDE) -o build/main

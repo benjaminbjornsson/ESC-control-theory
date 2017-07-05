@@ -5,7 +5,7 @@
 //#include <unistd.h>
 
 #include "gpio_init.h"
-#include "pwm_300.h"
+#include "pwm_50.h"
 #include "angle.h"
 
 #define THROTTLE_STEP 50
@@ -52,7 +52,7 @@ int main(){
 	//GPIO is ready to put square wave on output
 	//--------------------------------------------
 	int iret1, iret2, iret3;
-	iret1 = pthread_create(&thread1, NULL, pwm_300, (void *)port_value);
+	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
 	if(iret1){
 		printf("error pthread_create: pwm_300");
 		exit(1);
@@ -66,7 +66,7 @@ int main(){
 	pthread_join(thread1, NULL);
 	pthread_join(thread2, NULL);
 	flag = 0;
-	iret1 = pthread_create(&thread1, NULL, pwm_300, (void *)port_value);
+	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
 	if(iret1){
 		printf("error pthread_create: pwm_300");
 	}
@@ -95,7 +95,7 @@ void *ESC_calib(void *arg){
 		;
 	system("/bin/stty cooked");
 	printf("Connect the ESC power supply, press 'n' after beep:\n");
-	throttle = 400;
+	throttle = 1000;
 	system("/bin/stty raw");
 	while((c = getchar()) != 'n')
 		;
@@ -106,7 +106,7 @@ void *ESC_calib(void *arg){
 
 void *ESC_control(void *arg){
 	int c = 0, i = 0;
-	throttle = 400;
+	throttle = 1000;
 	printf("******************************************************\n");
 	printf("Controll the ESC by either +/- for more/less speed\n");
 	printf("Or set value directly by value in range 400-2000\n");
@@ -119,7 +119,7 @@ void *ESC_control(void *arg){
 				throttle = ((throttle + THROTTLE_STEP) < 2000) ? throttle + THROTTLE_STEP : throttle;
 				break;
 			case '-':
-				throttle = ((throttle - THROTTLE_STEP) > 400) ? throttle - THROTTLE_STEP : throttle;
+				throttle = ((throttle - THROTTLE_STEP) > 1000) ? throttle - THROTTLE_STEP : throttle;
 				break;
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -127,7 +127,7 @@ void *ESC_control(void *arg){
 				i = i*10 + (c - '0');
 				while(isdigit(c = getchar()))
 					i = i*10 + (c - '0');
-				if((i <= 2000) && (i >= 400))
+				if((i <= 2000) && (i >= 1000))
 					throttle = i;
 				i = 0;
 				system("/bin/stty raw");

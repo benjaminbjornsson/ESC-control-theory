@@ -9,4 +9,4 @@ extern int throttle;
 extern char flag;
 pthread_t thread1;
 
-void *pwm_300(void *ptr);
+void *pwm_50(void *ptr);
