@@ -26,7 +26,7 @@ void *angle(void *ptr){
 		bcm2835_spi_transfernb(tbuf, rbuf, len);
 		read_data = (rbuf[0] & 0x1F) << 7;
 		read_data = (read_data) | ((rbuf[1] >> 1) & 0x7F);
-		printf("throttle = %d\n", read_data);
+//		printf("throttle = %d\n", read_data);
 		system("/bin/stty raw");
 	}
 	system("/bin/stty cooked");
