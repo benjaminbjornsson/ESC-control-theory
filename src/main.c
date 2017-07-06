@@ -8,7 +8,7 @@
 #include "pwm_50.h"
 #include "angle.h"
 
-#define THROTTLE_STEP 50
+#define THROTTLE_STEP 1
 
 void *ESC_calib(void *ptr);
 void *ESC_control(void *ptr);
@@ -51,24 +51,39 @@ int main(){
 	//--------------------------------------------
 	//GPIO is ready to put square wave on output
 	//--------------------------------------------
+	int c;
+	printf("*******************************************************\n");
+	printf("Do you want to calibrate ESC?(y/n):");
+	system("/bin/stty raw");
+	while(1){
+		c = getchar();
+		if(c == 'y')
+			break;
+		if(c == 'n')
+			break;
+	}
+	system("/bin/stty cooked");
+	printf("*******************************************************\n");
 	int iret1, iret2, iret3;
+	pthread_t thread1, thread2, thread3;
+	if(c == 'y'){
+		iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
+		if(iret1){
+			printf("error pthread_create: pwm_50");
+			exit(1);
+		}
+		iret2 = pthread_create(&thread2, NULL, ESC_calib, NULL);
+		if(iret2){
+			printf("error pthread_create: ESC_calib");
+			exit(1);
+		}
+		pthread_join(thread1, NULL);
+		pthread_join(thread2, NULL);
+		flag = 0;
+	}
 	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
 	if(iret1){
-		printf("error pthread_create: pwm_300");
-		exit(1);
-	}
-	pthread_t thread2, thread3;
-	iret2 = pthread_create(&thread2, NULL, ESC_calib, NULL);
-	if(iret2){
-		printf("error pthread_create: ESC_calib");
-		exit(1);
-	}
-	pthread_join(thread1, NULL);
-	pthread_join(thread2, NULL);
-	flag = 0;
-	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
-	if(iret1){
-		printf("error pthread_create: pwm_300");
+		printf("error pthread_create: pwm_50");
 	}
 	iret2 = pthread_create(&thread2, NULL, ESC_control, NULL);
 	if(iret2){

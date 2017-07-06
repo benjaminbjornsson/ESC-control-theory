@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <sys/time.h>
 
 extern int throttle;
 extern char flag;
