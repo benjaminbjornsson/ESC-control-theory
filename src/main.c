@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-//#include <unistd.h>
+#include <ctype.h>
 
 #include "gpio_init.h"
 #include "pwm_50.h"
@@ -14,47 +14,11 @@ void *ESC_calib(void *ptr);
 void *ESC_control(void *ptr);
 
 int main(){
-	//----------------------------------
-	//Initiation of GPIO port as output
-	//----------------------------------
-	int gpio_port = 0;
 	printf("*********************************************************\n");
-	printf("\t\tWelcome to the leveling stick!\t\t*\n");
-	printf("*********************************************************\n");
-
-	while(1){
-		printf("Choose RPi3 GPIO for ESC controller\n");
-		printf("GPIO: ");
-		scanf("%d", &gpio_port);
-		if(gpio_export(gpio_port)){
-			printf("Unable to export GPIO_GEN%d\n", gpio_port);
-			exit(1);
-		}
-		else{
-			printf("GPIO_GEN%d exported successfully\n", gpio_port);
-			break;
-		}
-	}
-	char direction[] = "out";
-	printf("Length: %d\n", strlen(direction));
-	if(gpio_direction(gpio_port, direction, strlen(direction))){
-		printf("Unable to set GPIO_GEN%d as output\n", gpio_port);
-		exit(1);
-	}
-	else
-		printf("GPIO_GEN%d successfully set as output\n", gpio_port);
-	FILE *port_value;
-	if((port_value = gpio_value(gpio_port)) == NULL){
-		printf("Unable to attach file pointer to GPIO_GEN%d\n", gpio_port);
-		exit(1);
-	}
-	//--------------------------------------------
-	//GPIO is ready to put square wave on output
-	//--------------------------------------------
-	int c;
-	printf("*******************************************************\n");
+	printf("\t\tWelcome to the leveling stick!\t\t\n\n");
 	printf("Do you want to calibrate ESC?(y/n):");
 	system("/bin/stty raw");
+	int c;
 	while(1){
 		c = getchar();
 		if(c == 'y')
@@ -63,11 +27,11 @@ int main(){
 			break;
 	}
 	system("/bin/stty cooked");
-	printf("*******************************************************\n");
+	printf("\n*******************************************************\n");
 	int iret1, iret2, iret3;
 	pthread_t thread1, thread2, thread3;
 	if(c == 'y'){
-		iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
+		iret1 = pthread_create(&thread1, NULL, pwm_50, NULL);
 		if(iret1){
 			printf("error pthread_create: pwm_50");
 			exit(1);
@@ -81,7 +45,7 @@ int main(){
 		pthread_join(thread2, NULL);
 		flag = 0;
 	}
-	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *)port_value);
+	iret1 = pthread_create(&thread1, NULL, pwm_50, NULL);
 	if(iret1){
 		printf("error pthread_create: pwm_50");
 	}
@@ -90,14 +54,14 @@ int main(){
 		printf("error pthread_create: ESC_control");
 		exit(1);
 	}
-	iret3 = pthread_create(&thread3, NULL, angle, NULL);
+/*	iret3 = pthread_create(&thread3, NULL, angle, NULL);
 	if(iret3){
 		printf("error pthread_create: angle");
 		exit(1);
-	}
+	}*/
 	pthread_join(thread1, NULL);
 	pthread_join(thread2, NULL);
-	pthread_join(thread3, NULL);
+//	pthread_join(thread3, NULL);
 	system("/bin/stty cooked");
 }
 
