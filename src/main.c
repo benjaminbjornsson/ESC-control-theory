@@ -4,9 +4,9 @@
 #include <pthread.h>
 #include <ctype.h>
 
-#include "gpio_init.h"
 #include "pwm_50.h"
 #include "angle.h"
+#include "shared.h"
 
 #define THROTTLE_STEP 1
 
@@ -14,6 +14,13 @@ void *ESC_calib(void *ptr);
 void *ESC_control(void *ptr);
 
 int main(){
+	struct shared sharedValues;
+	struct shared *sharedValuesPtr;
+	sharedValuesPtr = &sharedValues;
+	sharedValuesPtr->flag = 0;
+	sharedValuesPtr->throttle = 0;
+	sharedValuesPtr->angle = 0;
+	sharedValuesPtr = &sharedValues;
 	printf("*********************************************************\n");
 	printf("\t\tWelcome to the leveling stick!\t\t\n\n");
 	printf("Do you want to calibrate ESC?(y/n):");
@@ -31,25 +38,25 @@ int main(){
 	int iret1, iret2, iret3;
 	pthread_t thread1, thread2, thread3;
 	if(c == 'y'){
-		iret1 = pthread_create(&thread1, NULL, pwm_50, NULL);
+		iret1 = pthread_create(&thread1, NULL, pwm_50, (void *) sharedValuesPtr);
 		if(iret1){
 			printf("error pthread_create: pwm_50");
 			exit(1);
 		}
-		iret2 = pthread_create(&thread2, NULL, ESC_calib, NULL);
+		iret2 = pthread_create(&thread2, NULL, ESC_calib, (void *) sharedValuesPtr);
 		if(iret2){
 			printf("error pthread_create: ESC_calib");
 			exit(1);
 		}
 		pthread_join(thread1, NULL);
 		pthread_join(thread2, NULL);
-		flag = 0;
+		sharedValuesPtr->flag = 0;
 	}
-	iret1 = pthread_create(&thread1, NULL, pwm_50, NULL);
+	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *) sharedValuesPtr);
 	if(iret1){
 		printf("error pthread_create: pwm_50");
 	}
-	iret2 = pthread_create(&thread2, NULL, ESC_control, NULL);
+	iret2 = pthread_create(&thread2, NULL, ESC_control, (void *) sharedValuesPtr);
 	if(iret2){
 		printf("error pthread_create: ESC_control");
 		exit(1);
@@ -66,26 +73,28 @@ int main(){
 }
 
 void *ESC_calib(void *arg){
+	struct shared *sharedPtr = (struct shared *)arg;
 	int c = 0;
 	printf("Disconnect the ESC power supply and then press 'n':\n");
-	throttle = 2000;
+	sharedPtr->throttle = 2000;
 	system("/bin/stty raw");
 	while((c = getchar()) != 'n')
 		;
 	system("/bin/stty cooked");
 	printf("Connect the ESC power supply, press 'n' after beep:\n");
-	throttle = 1000;
+	sharedPtr->throttle = 1000;
 	system("/bin/stty raw");
 	while((c = getchar()) != 'n')
 		;
 	system("/bin/stty cooked");
 	printf("You should now be ready to go!\n");
-	flag = 'q';
+	sharedPtr->flag = 'q';
 }
 
 void *ESC_control(void *arg){
+	struct shared *sharedPtr = (struct shared *)arg;
 	int c = 0, i = 0;
-	throttle = 1000;
+	sharedPtr->throttle = 1000;
 	printf("******************************************************\n");
 	printf("Controll the ESC by either +/- for more/less speed\n");
 	printf("Or set value directly by value in range 400-2000\n");
@@ -95,10 +104,10 @@ void *ESC_control(void *arg){
 	while((c = getchar()) != 'q'){
 		switch(c){
 			case '+':
-				throttle = ((throttle + THROTTLE_STEP) < 2000) ? throttle + THROTTLE_STEP : throttle;
+				sharedPtr->throttle = ((sharedPtr->throttle + THROTTLE_STEP) < 2000) ? sharedPtr->throttle + THROTTLE_STEP : sharedPtr->throttle;
 				break;
 			case '-':
-				throttle = ((throttle - THROTTLE_STEP) > 1000) ? throttle - THROTTLE_STEP : throttle;
+				sharedPtr->throttle = ((sharedPtr->throttle - THROTTLE_STEP) > 1000) ? sharedPtr->throttle - THROTTLE_STEP : sharedPtr->throttle;
 				break;
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -107,7 +116,7 @@ void *ESC_control(void *arg){
 				while(isdigit(c = getchar()))
 					i = i*10 + (c - '0');
 				if((i <= 2000) && (i >= 1000))
-					throttle = i;
+					sharedPtr->throttle = i;
 				i = 0;
 				system("/bin/stty raw");
 				break;
@@ -116,5 +125,5 @@ void *ESC_control(void *arg){
 		}
 	}
 	system("/bin/stty cooked");
-	flag = 'q';
+	sharedPtr->flag = 'q';
 }

@@ -5,7 +5,6 @@ INCLUDE = -Iinclude/
 
 SOURCE = src/main.c
 SOURCE += src/angle.c
-SOURCE += src/gpio_init.c
 SOURCE += src/pwm_50.c
 
 all:
