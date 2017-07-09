@@ -15,6 +15,7 @@
 
 void *ESC_calib(void *ptr);
 void *ESC_control(void *ptr);
+void *angle_calibration(void *ptr);
 
 int main(){
 	struct shared sharedValues;
@@ -28,7 +29,7 @@ int main(){
 	printf("\t\tWelcome to the leveling stick!\t\t\n\n");
 	printf("Do you want to calibrate ESC?(y/n):");
 	system("/bin/stty raw");
-	int c;
+	int c = 0;
 	while(1){
 		c = getchar();
 		if(c == 'y')
@@ -55,29 +56,51 @@ int main(){
 		pthread_join(thread2, NULL);
 		sharedValuesPtr->flag = 0;
 	}
+	printf("Do you want to calibrate angle sensor?(y/n):");
+	system("/bin/stty raw");
+	c = 0;
+	while(1){
+		c = getchar();
+		if(c == 'y')
+			break;
+		if(c == 'n')
+			break;
+	}
+	system("/bin/stty cooked");
+	if(c == 'y'){
+		iret1 = pthread_create(&thread1, NULL, angle_calibration, (void *) sharedValuesPtr);
+		if(iret1){
+			printf("error pthread_create: angle_calibration");
+			exit(1);
+		}
+		iret2 = pthread_create(&thread2, NULL, angle, (void *) sharedValuesPtr);
+		if(iret2){
+			printf("error pthread_create: angle");
+			exit(1);
+		}
+		pthread_join(thread1, NULL);
+		pthread_join(thread2, NULL);
+		while(sharedValuesPtr->flag != 'q')
+			;
+		sharedValuesPtr->flag = 0;
+	}
 	iret1 = pthread_create(&thread1, NULL, pwm_50, (void *) sharedValuesPtr);
 	if(iret1){
 		printf("error pthread_create: pwm_50");
 	}
-/*	iret2 = pthread_create(&thread2, NULL, ESC_control, (void *) sharedValuesPtr);
-	if(iret2){
-		printf("error pthread_create: ESC_control");
-		exit(1);
-	}*/
-	iret3 = pthread_create(&thread3, NULL, angle, (void *) sharedValuesPtr);
+	iret2 = pthread_create(&thread3, NULL, angle, (void *) sharedValuesPtr);
 	if(iret3){
 		printf("error pthread_create: angle");
 		exit(1);
 	}
-	iret4 = pthread_create(&thread4, NULL, PID, (void *) sharedValuesPtr);
+	iret3 = pthread_create(&thread4, NULL, PID, (void *) sharedValuesPtr);
 	if(iret4){
 		printf("error pthread_creat: PID");
 		exit(1);
 	}
 	pthread_join(thread1, NULL);
-//	pthread_join(thread2, NULL);
+	pthread_join(thread2, NULL);
 	pthread_join(thread3, NULL);
-	pthread_join(thread4, NULL);
 	system("/bin/stty cooked");
 }
 
@@ -103,7 +126,7 @@ void *ESC_calib(void *arg){
 	printf("You should now be ready to go!\n");
 	sharedPtr->flag = 'q';
 }
-
+/*
 void *ESC_control(void *arg){
 	struct shared *sharedPtr = (struct shared *)arg;
 	int c = 0, i = 0;
@@ -139,8 +162,49 @@ void *ESC_control(void *arg){
 	}
 	system("/bin/stty cooked");
 	sharedPtr->flag = 'q';
+}*/
+
+void *angle_calibration(void *ptr){
+	struct shared *sharedValuesPtr = (struct shared *)ptr;
+	printf("\n*******************************************************\n");
+	printf("ANGLE CALIBRATION\n");
+	printf("Make sure the rig is in it's resting position and press 'n': ");
+	int c = 0;
+	system("/bin/stty raw");
+	while(1){
+		c = getchar();
+		if(c == 'n')
+			break;
+	}
+	system("/bin/stty cooked");
+	putchar('\n');
+	float ADC_min = sharedValuesPtr->angle;
+	printf("Raise the rig to it's max position and then press 'n': ");
+	c = 0;
+	system("/bin/stty raw");
+	while(1){
+		c = getchar();
+		if(c == 'n')
+			break;
+	}
+	system("/bin/stty cooked");
+	putchar('\n');
+	float ADC_max = sharedValuesPtr->angle;
+	printf("Measure the angle of the rig at resting position(relative to the floor):");
+	float angle_min;
+	scanf("%f" , &angle_min);
+	printf("Measure the angle of the rig at max position:");
+	float angle_max;
+	scanf("%f", &angle_max);
+	printf("*******************************************************\n");
+	sharedValuesPtr->slope = (angle_max-angle_min)/(ADC_max-ADC_min);
+	sharedValuesPtr->theta_0 = angle_min;
+	sharedValuesPtr->ADC_0 = ADC_min;
+	sharedValuesPtr->flag = 'q';
 }
 
 void *user_interface_PID(void *arg){
+	printf("*******************************************************\n");
 	
+	printf("*******************************************************\n");
 }

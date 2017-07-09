@@ -27,7 +27,7 @@ void *angle(void *ptr){
 	int read_data = 0;
 	
 	int i = 1;
-	double sample = 0;
+	long int sample = 0;
 	
 	while(sharedValuesPtr->flag != 'q'){
 		bcm2835_spi_transfernb(tbuf, rbuf, len);
@@ -35,7 +35,7 @@ void *angle(void *ptr){
 		read_data = (read_data) | ((rbuf[1] >> 1) & 0x7F);
 		sample += read_data;
 		if(i == MAX_SAMPLES){
-			sharedValuesPtr->angle = (int)(sample/MAX_SAMPLES);
+			sharedValuesPtr->angle = sharedValuesPtr->theta_0 + sharedValuesPtr->slope*((sample/MAX_SAMPLES)-sharedValuesPtr->ADC_0);
 			sample = 0;
 			i = 1;
 		}

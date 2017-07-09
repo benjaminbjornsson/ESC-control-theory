@@ -6,7 +6,11 @@ struct shared{
 
 	volatile unsigned angle;
 	volatile double setpoint;
-	
+
 	volatile float K_p, K_i, K_d;
+	
+	volatile float slope;
+	volatile float theta_0;
+	volatile float ADC_0;
 };
 #endif

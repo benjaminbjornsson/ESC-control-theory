@@ -1,6 +1,8 @@
 #include "PID.h"
 #include "shared.h"
 
+#define THROTTLE_0 1800
+
 void *PID(void * ptr){
 	struct shared *sharedValuesPtr = (struct shared *) ptr;
 	const unsigned int SLEEP_TIME = 1000;
@@ -19,8 +21,7 @@ void *PID(void * ptr){
 		
 		previousError = error;
 		
-		sharedValuesPtr->throttle = sharedValuesPtr->K_p*error + sharedValuesPtr->K_i*integral + sharedValuesPtr->K_d*derivative;
-		printf("throttle: %f\n", error);
+		sharedValuesPtr->throttle = THROTTLE_0 + sharedValuesPtr->K_p*error + sharedValuesPtr->K_i*integral + sharedValuesPtr->K_d*derivative;
 		usleep(1000);
 	}
 }
