@@ -18,5 +18,5 @@ void *pwm_50(void *ptr){
 	}
 	bcm2835_pwm_set_data(PWM_CHANNEL,0);
 	bcm2835_close();
-	return (void *)0;
+	printf("Leaving function pwm_50\n");
 }

@@ -2,12 +2,16 @@
 #define BB_ESC_SHARED
 struct shared{
 	volatile char flag;
+	volatile char calibFlag;
 	volatile int throttle;
 
-	volatile unsigned angle;
+//	volatile float angle;
+	volatile double angle;
 	volatile double setpoint;
 
-	volatile float K_p, K_i, K_d;
+	volatile float K_p;
+	volatile float K_i;
+	volatile float K_d;
 	
 	volatile float slope;
 	volatile float theta_0;
