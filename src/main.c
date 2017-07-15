@@ -16,6 +16,7 @@
 void *ESC_calib(void *ptr);
 void *ESC_control(void *ptr);
 void *angle_calibration(void *ptr);
+int init_bcm2835(void);
 
 int main(){
 	struct shared sharedValues;
@@ -25,6 +26,10 @@ int main(){
 	sharedValuesPtr->calibFlag = 0;
 	sharedValuesPtr->throttle = 0;
 	sharedValuesPtr->angle = 0;
+	if(!init_bcm2835()){
+		printf("Error: Unable to initialize bcm2835(), are you running as root?\n");
+		exit(1);
+	}
 	printf("*********************************************************\n");
 	printf("\t\tWelcome to the leveling stick!\t\t\n\n");
 	printf("Do you want to calibrate ESC?(y/n):");
@@ -124,7 +129,8 @@ int main(){
 	pthread_join(thread7, NULL);
 	pthread_join(thread8, NULL);
 	system("/bin/stty cooked");
-	printf("You are now leaving main!\n");
+	bcm2835_close();
+	return 0;
 }
 
 void *ESC_calib(void *arg){
@@ -152,25 +158,78 @@ void *ESC_calib(void *arg){
 
 void *ESC_control(void *arg){
 	struct shared *sharedPtr = (struct shared *)arg;
-	printf("******************************************************\n");
-	printf("Controll the ESC by either +/- for more/less K_p\n");
+	printf("\n******************************************************\n");
+	printf("Use '+', '-', 'p', 'i', 'd' and float values to controll\n");
+	printf("K_p, K_i and K_d\n");
 	printf("Press 'q' to quit\n");
 	printf("******************************************************\n");
 	system("/bin/stty raw");
 	int c;
+	char K_flag = 0;
+	double num = 0;
 	while((c = getchar()) != 'q'){
 		switch(c){
+			case 'p':
+				K_flag = 'p';
+				break;
+			case 'i':
+				K_flag = 'i';
+				break;
+			case 'd':
+				K_flag = 'd';
+				break;
 			case '+':
-				sharedPtr->K_i += 0.1;
+				switch(K_flag){
+					case 'p':
+						sharedPtr->K_p += 0.01;
+						break;
+					case 'i':
+						sharedPtr->K_i += 0.01;
+						break;
+					case 'd':
+						sharedPtr->K_d += 0.01;
+						break;
+				}
 				break;
 			case '-':
-				sharedPtr->K_i -= 0.1;
+				switch(K_flag){
+					case 'p':
+						sharedPtr->K_p -= 0.01;
+						break;
+					case 'i':
+						sharedPtr->K_i -= 0.01;
+						break;
+					case 'd':
+						sharedPtr->K_d -= 0.01;
+						break;
+				}
 				break;
-			default:
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+				num = (c - '0');
+				while(isdigit(c = getchar()))
+					num = 10*num + (c - '0');
+				if(c == '.'){
+					int i;
+					for(i = 1; isdigit(c = getchar()); i*=10)
+						num = num + (c - '0')/(10.0*i);
+				}
+				switch(K_flag){
+					case 'p':
+						sharedPtr->K_p = num;
+						break;
+					case 'i':
+						sharedPtr->K_i = num;
+						break;
+					case 'd':
+						sharedPtr->K_d = num;
+						break;
+				}
+				num = 0;
 				break;
 		}
 		system("/bin/stty cooked");
-		printf("throttle: %d-K_i: %f-angle: %f\n", sharedPtr->throttle, sharedPtr->K_i, sharedPtr->angle);
+		printf("\nK_p: %f\tK_i: %f\tK_d: %f\tangle: %f\tthrottle: %d\tlast flag: %c\n", sharedPtr->K_p ,sharedPtr->K_i, sharedPtr->K_d ,sharedPtr->angle, sharedPtr->throttle, K_flag);
 		system("/bin/stty raw");
 		usleep(500000);
 	}
@@ -223,7 +282,11 @@ void *angle_calibration(void *ptr){
 	float angle_max;
 	scanf("%f", &angle_max);
 	printf("*******************************************************\n");
-	sharedValuesPtr->slope = (angle_max-angle_min)/(ADC_max-ADC_min);
+	if((ADC_max-ADC_min) != 0)
+		sharedValuesPtr->slope = (angle_max-angle_min)/(ADC_max-ADC_min);
+	else{
+		printf("Error: division by zero undefined\n");
+	}
 	sharedValuesPtr->theta_0 = angle_min;
 	sharedValuesPtr->ADC_0 = ADC_min;
 	sharedValuesPtr->flag = 'q';
@@ -237,4 +300,10 @@ void *user_interface_PID(void *arg){
 	printf("*******************************************************\n");
 	
 	printf("*******************************************************\n");
+}
+
+int init_bcm2835(void){
+	if(!bcm2835_init())
+		return 0;
+	return 1;
 }

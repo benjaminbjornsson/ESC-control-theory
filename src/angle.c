@@ -1,15 +1,15 @@
 #include "angle.h"
 
-#define SAMPLE_RATE 10
-#define MAX_SAMPLES 100
+#define SAMPLE_RATE 1
+#define MAX_SAMPLES 10
 
 void *angle(void *ptr){
 	struct shared *sharedValuesPtr = (struct shared *)ptr;
-	if(!bcm2835_init()){
+/*	if(!bcm2835_init()){
 		printf("bcm2835_init failed, are you running as root?\n");
 		sharedValuesPtr->flag = 'q';
 		exit(1);
-	}
+	}*/
 	if(!bcm2835_spi_begin()){
 		printf("bcm2835_begin failed, are you running as root?\n");
 		sharedValuesPtr->flag = 'q';
@@ -21,6 +21,7 @@ void *angle(void *ptr){
 	bcm2835_spi_chipSelect(BCM2835_SPI_CS0);
 	bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);
 	
+		
 	uint8_t dummy = 0;
 	uint32_t len = 2;
 	char tbuf[2], rbuf[2];
@@ -30,6 +31,7 @@ void *angle(void *ptr){
 	rbuf[1] = 2;
 
 	int i = 1;
+
 	double sample = 0;
 	if(sharedValuesPtr->calibFlag == 1){
 		while(sharedValuesPtr->flag != 'q'){
@@ -62,7 +64,7 @@ void *angle(void *ptr){
 				sharedValuesPtr->angle = sharedValuesPtr->theta_0 + (sharedValuesPtr->slope)*(sample/MAX_SAMPLES - sharedValuesPtr->ADC_0);
 //				sharedValuesPtr->angle = sample/MAX_SAMPLES;
 //				system("/bin/stty cooked");
-//				printf("%f\n", sharedValuesPtr->angle);
+//				printf("angle: %f\tthrottle: %d\n", sharedValuesPtr->angle, sharedValuesPtr->throttle);
 //				system("/bin/stty raw");
 				sample = 0;
 				i = 1;
@@ -72,6 +74,6 @@ void *angle(void *ptr){
 		}
 	}
 	bcm2835_spi_end();
-	bcm2835_close();
-	printf("Now leaving function angle\n");
+//	bcm2835_close();
+	return 0;
 }
